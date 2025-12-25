@@ -1,23 +1,34 @@
-# 要復習・きちんと理解するまで
-
-N, X = map(int, input().split())
-S = [0] * N
-C = [0] * N
-P = [0] * N
+N, MAX_MONEY = map(int, input().split())
+scores = [0] * N
+costs = [0] * N
+probs = [0] * N
 
 for i in range(N):
-    S[i], C[i], P[i] = map(int, input().split())
-    P[i] /= 100
+    scores[i], costs[i], probs[i] = map(int, input().split())
+    probs[i] /= 100 # 100分率を少数表記に補正
 
-d = [[0.0 for _ in range(X + 1)] for _ in range(1 << N)]
-for x in range(X + 1):
-    for s in range(1 << N):
+states = 1<< N # 解答状況
+dp = [[0.0]*(MAX_MONEY + 1) for _ in range(states)] # 残金×解答状況
+
+# 残金0→残金満額へ推移
+for money in range(MAX_MONEY + 1):
+    for state in range(states):
         for i in range(N):
-            xx = x - C[i]
-            ss = s | (1 << i)
-            if xx < 0 or s == ss:
-                continue
-            val = P[i] * (d[ss][xx] + S[i]) + (1 - P[i]) * d[s][xx]
-            d[s][x] = max(d[s][x], val)
+            next_money = money - costs[i]
+            next_state = state | (1 << i)
 
-print(d[0][X])
+            # 金額不足または既に解いている問題はスキップ
+            if next_money < 0 or state == next_state:
+                continue
+
+            prob = probs[i]
+            # 成功 -> next_state, next_money, scores[i] を得る
+            # 失敗 -> stateのまま, next_money
+            # ※for maney for state の計算順により、金額が小さいものは全statesについて計算済み
+            expected = (
+                prob * (dp[next_state][next_money] + scores[i]) +
+                (1 - prob) * dp[state][next_money]
+            )
+            dp[state][money] = max(dp[state][money], expected)
+
+print(dp[0][MAX_MONEY])
